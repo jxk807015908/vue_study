@@ -28,6 +28,16 @@ const conditionalComment = /^<!\[/
 
 // Special Elements (can contain anything)
 export const isPlainTextElement = makeMap('script,style,textarea', true)
+// 判断标签名是否是script,style,textarea中的一个，不区分大小写
+// isPlainTextElement = (str) => {
+//   let map = {
+//     script: true,
+//     style: true,
+//     textarea: true,
+//   }
+//   return map[str.toLowerCase()]
+// }
+
 const reCache = {}
 
 const decodingMap = {
@@ -61,40 +71,49 @@ export function parseHTML (html, options) {
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
+    // 判断
     if (!lastTag || !isPlainTextElement(lastTag)) {
       let textEnd = html.indexOf('<')
       if (textEnd === 0) {
         // Comment:
+        // 判断是否是注释节点（普通）
         if (comment.test(html)) {
           const commentEnd = html.indexOf('-->')
 
           if (commentEnd >= 0) {
             if (options.shouldKeepComment) {
+              // 将注释节点加入到ast树中
               options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3)
             }
+            // 内容往后推commentEnd + 3
             advance(commentEnd + 3)
             continue
           }
         }
 
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
+        // 判断是否是条件注释
         if (conditionalComment.test(html)) {
           const conditionalEnd = html.indexOf(']>')
 
           if (conditionalEnd >= 0) {
+            // 内容往后推conditionalEnd + 2，todo 相当于直接将条件注释忽略过去了?
             advance(conditionalEnd + 2)
             continue
           }
         }
 
         // Doctype:
+        // 判断是否是DOCTYPE
         const doctypeMatch = html.match(doctype)
         if (doctypeMatch) {
+          // 内容往后推doctypeMatch[0].length，todo 相当于直接将DOCTYPE忽略过去了?
           advance(doctypeMatch[0].length)
           continue
         }
 
         // End tag:
+        // 判断是否是闭合标签，如</div>
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
@@ -179,6 +198,7 @@ export function parseHTML (html, options) {
   // Clean up any remaining tags
   parseEndTag()
 
+  // 将HTML内容向后移n个单位
   function advance (n) {
     index += n
     html = html.substring(n)
@@ -260,6 +280,7 @@ export function parseHTML (html, options) {
     // Find the closest opened tag of the same type
     if (tagName) {
       lowerCasedTagName = tagName.toLowerCase()
+      // stack栈中从后往前查看是否有与当前标签一致的，如果一致直接跳出循环，pos值指向与当前标签一致的值得位置
       for (pos = stack.length - 1; pos >= 0; pos--) {
         if (stack[pos].lowerCasedTag === lowerCasedTagName) {
           break
@@ -272,6 +293,7 @@ export function parseHTML (html, options) {
 
     if (pos >= 0) {
       // Close all the open elements, up the stack
+      // 在pos序列后面的判断为是没有闭合闭合的标签，故挨个报错提示，并直接闭合这些标签
       for (let i = stack.length - 1; i >= pos; i--) {
         if (process.env.NODE_ENV !== 'production' &&
           (i > pos || !tagName) &&
@@ -283,6 +305,7 @@ export function parseHTML (html, options) {
           )
         }
         if (options.end) {
+          // 闭合标签
           options.end(stack[i].tag, start, end)
         }
       }

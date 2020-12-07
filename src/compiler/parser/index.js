@@ -169,7 +169,7 @@ export function parse (
       postTransforms[i](element, options)
     }
   }
-
+  // 删除当前元素下尾部的空白节点
   function trimEndingWhitespace (el) {
     // remove trailing whitespace node
     if (!inPre) {
@@ -208,8 +208,8 @@ export function parse (
     canBeLeftOpenTag: options.canBeLeftOpenTag,
     shouldDecodeNewlines: options.shouldDecodeNewlines,
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
-    shouldKeepComment: options.comments,
-    outputSourceRange: options.outputSourceRange,
+    shouldKeepComment: options.comments, // 决定注释节点是否需要保留
+    outputSourceRange: options.outputSourceRange, //判断是否需要将节点对应在template上的位置保存下来
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -434,6 +434,7 @@ export function processElement (
 
   // determine whether this is a plain element after
   // removing structural attributes
+  // 确定节点是不是一个没有属性节点
   element.plain = (
     !element.key &&
     !element.scopedSlots &&
@@ -451,10 +452,12 @@ export function processElement (
   return element
 }
 
+//给节点加上key属性，值为动态值的表达式
 function processKey (el) {
   const exp = getBindingAttr(el, 'key')
   if (exp) {
     if (process.env.NODE_ENV !== 'production') {
+      // template上不能绑key属性
       if (el.tag === 'template') {
         warn(
           `<template> cannot be keyed. Place the key on real elements instead.`,

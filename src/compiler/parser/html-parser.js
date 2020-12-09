@@ -272,6 +272,7 @@ export function parseHTML (html, options) {
     }
   }
 
+  // 处理结束标签
   function parseEndTag (tagName, start, end) {
     let pos, lowerCasedTagName
     if (start == null) start = index
@@ -290,7 +291,7 @@ export function parseHTML (html, options) {
       // If no tag name is provided, clean shop
       pos = 0
     }
-
+    // 找到了相同标签名节点时
     if (pos >= 0) {
       // Close all the open elements, up the stack
       // 在pos序列后面的判断为是没有闭合闭合的标签，故挨个报错提示，并直接闭合这些标签
@@ -313,11 +314,11 @@ export function parseHTML (html, options) {
       // Remove the open elements from the stack
       stack.length = pos
       lastTag = pos && stack[pos - 1].tag
-    } else if (lowerCasedTagName === 'br') {
+    } else if (lowerCasedTagName === 'br') { // </br>被认为时自闭标签，不需要与前面的标签进行匹配，可以直接当一个新节点
       if (options.start) {
         options.start(tagName, [], true, start, end)
       }
-    } else if (lowerCasedTagName === 'p') {
+    } else if (lowerCasedTagName === 'p') { // 前面没有p标签时，</p>当做<p></p>处理
       if (options.start) {
         options.start(tagName, [], false, start, end)
       }

@@ -57,6 +57,7 @@ let platformMustUseProp
 let platformGetTagNamespace
 let maybeComponent
 
+// 创建一个基础ast节点
 export function createASTElement (
   tag: string,
   attrs: Array<ASTAttr>,
@@ -110,7 +111,9 @@ export function parse (
     }
   }
 
+  // 对将要闭合的节点做处理（大部分是对属性的处理），并与父节点做好映射关系，方便父节点找子节点，子节点找父节点（主要是通过节点的children、ifConditions、parent这三个属性）
   function closeElement (element) {
+    // 删除当前元素下尾部的空白注释节点
     trimEndingWhitespace(element)
     if (!inVPre && !element.processed) {
       element = processElement(element, options)
@@ -118,10 +121,12 @@ export function parse (
     // tree management
     if (!stack.length && element !== root) {
       // allow root elements with v-if, v-else-if and v-else
+      // 判断节点是使用if语句的根节点
       if (root.if && (element.elseif || element.else)) {
         if (process.env.NODE_ENV !== 'production') {
           checkRootConstraints(element)
         }
+        // 将当前节点及其if表达式存入根节点的ifConditions中
         addIfCondition(root, {
           exp: element.elseif,
           block: element
@@ -139,6 +144,7 @@ export function parse (
       if (element.elseif || element.else) {
         processIfConditions(element, currentParent)
       } else {
+        // 判断当前节点是否是一个插槽节点
         if (element.slotScope) {
           // scoped slot
           // keep it in the children list so that v-else(-if) conditions can
@@ -146,6 +152,7 @@ export function parse (
           const name = element.slotTarget || '"default"'
           ;(currentParent.scopedSlots || (currentParent.scopedSlots = {}))[name] = element
         }
+        // 将当前节点放入父节点的children数组中
         currentParent.children.push(element)
         element.parent = currentParent
       }
@@ -153,14 +160,17 @@ export function parse (
 
     // final children cleanup
     // filter out scoped slots
+    // 过滤掉带slotScope属性的节点，应为这个节点是放在对应节点的scopedSlots下的
     element.children = element.children.filter(c => !(c: any).slotScope)
     // remove trailing whitespace node again
+    // 删除当前元素下尾部的空白注释节点
     trimEndingWhitespace(element)
 
     // check pre state
     if (element.pre) {
       inVPre = false
     }
+    // 判断标签名是不是pre
     if (platformIsPreTag(element.tag)) {
       inPre = false
     }
@@ -169,7 +179,7 @@ export function parse (
       postTransforms[i](element, options)
     }
   }
-  // 删除当前元素下尾部的空白节点
+  // 删除当前元素下尾部的空白注释节点
   function trimEndingWhitespace (el) {
     // remove trailing whitespace node
     if (!inPre) {
@@ -213,6 +223,7 @@ export function parse (
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
+      // 获取父元素的命名空间或判断tag是否为svg、math，如果是命名空间就是svg或math
       const ns = (currentParent && currentParent.ns) || platformGetTagNamespace(tag)
 
       // handle IE svg bug
@@ -230,12 +241,14 @@ export function parse (
         if (options.outputSourceRange) {
           element.start = start
           element.end = end
+          // 非生产环境是会把所有属性全部加到原生属性的映射表中
           element.rawAttrsMap = element.attrsList.reduce((cumulated, attr) => {
             cumulated[attr.name] = attr
             return cumulated
           }, {})
         }
         attrs.forEach(attr => {
+          // 判断属性名中是否存在非法的字符
           if (invalidAttributeRE.test(attr.name)) {
             warn(
               `Invalid dynamic argument expression: attribute names cannot contain ` +
@@ -297,6 +310,7 @@ export function parse (
       }
     },
 
+    // 节点闭合时的处理
     end (tag, start, end) {
       const element = stack[stack.length - 1]
       // pop stack
@@ -557,11 +571,12 @@ function processIf (el) {
   }
 }
 
+//处理含有v-else-if和v-else的节点，该节点的同级的上一个必须要是v-if
 function processIfConditions (el, parent) {
   const prev = findPrevElement(parent.children)
   if (prev && prev.if) {
     addIfCondition(prev, {
-      exp: el.elseif,
+      exp: el.elseif, // todo 这里明明有两种可能，为什么值挑了elseif的，else的这一项直接undefined就行了嘛？
       block: el
     })
   } else if (process.env.NODE_ENV !== 'production') {
@@ -573,6 +588,7 @@ function processIfConditions (el, parent) {
   }
 }
 
+// 从后往前找一个元素节点，并将其后的节点删除
 function findPrevElement (children: Array<any>): ASTElement | void {
   let i = children.length
   while (i--) {
@@ -591,6 +607,7 @@ function findPrevElement (children: Array<any>): ASTElement | void {
   }
 }
 
+// 将某个节点及其if判断表达式，存入某个节点的ifConditions属性中
 export function addIfCondition (el: ASTElement, condition: ASTIfCondition) {
   if (!el.ifConditions) {
     el.ifConditions = []
@@ -967,6 +984,7 @@ function isTextTag (el): boolean {
   return el.tag === 'script' || el.tag === 'style'
 }
 
+// 被判断为Forbidden的两种情况 1：标签名是style  2：标签名是script并且没有属性type或type是'text/javascript'
 function isForbiddenTag (el): boolean {
   return (
     el.tag === 'style' ||

@@ -283,18 +283,24 @@ export function parse (
           inVPre = true
         }
       }
+      // 判断节点名是不是pre
       if (platformIsPreTag(element.tag)) {
         inPre = true
       }
       if (inVPre) {
+        // 将所有属性当做原生属性（:title、@click这种也包括在内）
         processRawAttrs(element)
       } else if (!element.processed) {
         // structural directives
+        // 处理v-for
         processFor(element)
+        // 处理v-if
         processIf(element)
+        // 处理v-once
         processOnce(element)
       }
 
+      // root不存在说明当前节点是根节点
       if (!root) {
         root = element
         if (process.env.NODE_ENV !== 'production') {
@@ -302,6 +308,7 @@ export function parse (
         }
       }
 
+      // 判断是否是自闭合标签，如果是直接闭合标签
       if (!unary) {
         currentParent = element
         stack.push(element)
@@ -413,12 +420,14 @@ export function parse (
   return root
 }
 
+// 处理v-pre属性
 function processPre (el) {
   if (getAndRemoveAttr(el, 'v-pre') != null) {
     el.pre = true
   }
 }
 
+// 将attrsList复制一份到attrs（value序列化）
 function processRawAttrs (el) {
   const list = el.attrsList
   const len = list.length
@@ -511,6 +520,7 @@ function processRef (el) {
   }
 }
 
+// 处理v-for
 export function processFor (el: ASTElement) {
   let exp
   if ((exp = getAndRemoveAttr(el, 'v-for'))) {
@@ -533,6 +543,7 @@ type ForParseResult = {
   iterator2?: string;
 };
 
+// 处理v-for绑定的表达式，例如 '(item,index,index2) in [1,2,3,4]' 会转化成 {for: "[1,2,3,4]", alias: "item", iterator1: "index", iterator2: "index2"}
 export function parseFor (exp: string): ?ForParseResult {
   const inMatch = exp.match(forAliasRE)
   if (!inMatch) return
@@ -552,6 +563,7 @@ export function parseFor (exp: string): ?ForParseResult {
   return res
 }
 
+// 处理v-if
 function processIf (el) {
   const exp = getAndRemoveAttr(el, 'v-if')
   if (exp) {
@@ -615,6 +627,7 @@ export function addIfCondition (el: ASTElement, condition: ASTIfCondition) {
   el.ifConditions.push(condition)
 }
 
+//处理v-once
 function processOnce (el) {
   const once = getAndRemoveAttr(el, 'v-once')
   if (once != null) {

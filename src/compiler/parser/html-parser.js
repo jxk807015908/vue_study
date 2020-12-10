@@ -113,7 +113,7 @@ export function parseHTML (html, options) {
         }
 
         // End tag:
-        // 判断是否是闭合标签，如</div>
+        // 判断是否是闭合标签（标签尾），如</div>
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
@@ -124,6 +124,7 @@ export function parseHTML (html, options) {
 
         // Start tag:
         const startTagMatch = parseStartTag()
+        // 判断是否是标签头，如<div>
         if (startTagMatch) {
           handleStartTag(startTagMatch)
           if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
@@ -204,6 +205,7 @@ export function parseHTML (html, options) {
     html = html.substring(n)
   }
 
+  // 编译标签头， 包括标签名及其属性
   function parseStartTag () {
     const start = html.match(startTagOpen)
     if (start) {
@@ -214,6 +216,7 @@ export function parseHTML (html, options) {
       }
       advance(start[0].length)
       let end, attr
+      // 没到标签结尾，并且泥鞥匹配到动态或静态属性时进入循环，最终属性会放入attrs数组中以字符串形式
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
         advance(attr[0].length)
@@ -242,6 +245,7 @@ export function parseHTML (html, options) {
       }
     }
 
+    // 判断是否为自闭合标签
     const unary = isUnaryTag(tagName) || !!unarySlash
 
     const l = match.attrs.length

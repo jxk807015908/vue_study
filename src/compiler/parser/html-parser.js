@@ -56,6 +56,7 @@ const encodedAttrWithNewLines = /&(?:lt|gt|quot|amp|#39|#10|#9);/g
 const isIgnoreNewlineTag = makeMap('pre,textarea', true)
 const shouldIgnoreFirstNewline = (tag, html) => tag && isIgnoreNewlineTag(tag) && html[0] === '\n'
 
+// 将内容编码回来，如'&lt;'转成'<',
 function decodeAttr (value, shouldDecodeNewlines) {
   const re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr
   return value.replace(re, match => decodingMap[match])
@@ -71,7 +72,7 @@ export function parseHTML (html, options) {
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
-    // 判断
+    // 判断上一个标签不存在或上一个标签不是script,style,textarea
     if (!lastTag || !isPlainTextElement(lastTag)) {
       let textEnd = html.indexOf('<')
       if (textEnd === 0) {
@@ -126,7 +127,9 @@ export function parseHTML (html, options) {
         const startTagMatch = parseStartTag()
         // 判断是否是标签头，如<div>
         if (startTagMatch) {
+          // 处理开始标签
           handleStartTag(startTagMatch)
+          // 如果标签名是pre,textarea，html的下一个字符是换行符
           if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
             advance(1)
           }
@@ -166,14 +169,18 @@ export function parseHTML (html, options) {
     } else {
       let endTagLength = 0
       const stackedTag = lastTag.toLowerCase()
+      // 用于匹配标签头到闭合标签间的文本的正则
       const reStackedTag = reCache[stackedTag] || (reCache[stackedTag] = new RegExp('([\\s\\S]*?)(</' + stackedTag + '[^>]*>)', 'i'))
       const rest = html.replace(reStackedTag, function (all, text, endTag) {
+        // text是文本内容，endTag是闭合标签的字符串
         endTagLength = endTag.length
         if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
+          // todo 不知道这个在处理什么
           text = text
             .replace(/<!\--([\s\S]*?)-->/g, '$1') // #7298
             .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1')
         }
+        // 如果标签名是pre,textarea，text的下一个字符是换行符
         if (shouldIgnoreFirstNewline(stackedTag, text)) {
           text = text.slice(1)
         }
@@ -232,14 +239,17 @@ export function parseHTML (html, options) {
     }
   }
 
+  // 处理开始标签
   function handleStartTag (match) {
     const tagName = match.tagName
-    const unarySlash = match.unarySlash
+    const unarySlash = match.unarySlash //获取自闭合的标志 ‘/’
 
     if (expectHTML) {
+      // 如果上一个标签时p，这一个标签为div,h1,h2,h3,h4,h5,h6,head,header,hgroup等节点中的一个时，立即闭合P标签
       if (lastTag === 'p' && isNonPhrasingTag(tagName)) {
         parseEndTag(lastTag)
       }
+      // 如果当前标签名为'colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr,source'中的一个，上一个标签又和这个标签一致，则立即闭合上一个标签
       if (canBeLeftOpenTag(tagName) && lastTag === tagName) {
         parseEndTag(tagName)
       }
@@ -252,12 +262,14 @@ export function parseHTML (html, options) {
     const attrs = new Array(l)
     for (let i = 0; i < l; i++) {
       const args = match.attrs[i]
-      const value = args[3] || args[4] || args[5] || ''
+      const value = args[3] || args[4] || args[5] || '' //获取绑定的值
+      // 检查当前浏览器是否在属性值内编码字符
       const shouldDecodeNewlines = tagName === 'a' && args[1] === 'href'
         ? options.shouldDecodeNewlinesForHref
         : options.shouldDecodeNewlines
       attrs[i] = {
         name: args[1],
+        // 将内容编码回来，如'&lt;'转成'<',
         value: decodeAttr(value, shouldDecodeNewlines)
       }
       if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
@@ -265,12 +277,12 @@ export function parseHTML (html, options) {
         attrs[i].end = args.end
       }
     }
-
+    //如果不是自闭合的标签就把当前节点存到栈里
     if (!unary) {
       stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end })
       lastTag = tagName
     }
-
+    //外部也开始处理节点和存栈
     if (options.start) {
       options.start(tagName, attrs, unary, match.start, match.end)
     }

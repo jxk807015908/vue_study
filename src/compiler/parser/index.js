@@ -220,6 +220,7 @@ export function parse (
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
     shouldKeepComment: options.comments, // 决定注释节点是否需要保留
     outputSourceRange: options.outputSourceRange, //判断是否需要将节点对应在template上的位置保存下来
+    // 节点开始时的处理
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -329,6 +330,7 @@ export function parse (
       closeElement(element)
     },
 
+    // 文本节点的处理
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {

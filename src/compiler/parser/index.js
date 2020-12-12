@@ -357,12 +357,15 @@ export function parse (
         return
       }
       const children = currentParent.children
+      // 这里如果没进入，说明text去掉字符串的头尾空白符内容后是没有的
       if (inPre || text.trim()) {
+        // 判断父标签是不是script，style，若不是需要将文本内容进行解码
         text = isTextTag(currentParent) ? text : decodeHTMLCached(text)
       } else if (!children.length) {
         // remove the whitespace-only node right after an opening tag
         text = ''
       } else if (whitespaceOption) {
+        // 对换行的处理
         if (whitespaceOption === 'condense') {
           // in condense mode, remove the whitespace node if it contains
           // line break, otherwise condense to a single space
@@ -376,6 +379,7 @@ export function parse (
       if (text) {
         if (!inPre && whitespaceOption === 'condense') {
           // condense consecutive whitespaces into single space
+          // 将多个空白符替换成一个空字符
           text = text.replace(whitespaceRE, ' ')
         }
         let res
@@ -994,6 +998,7 @@ function makeAttrsMap (attrs: Array<Object>): Object {
   return map
 }
 
+//判断当前标签是不是script，style
 // for script (e.g. type="x/template") or style, do not decode content
 function isTextTag (el): boolean {
   return el.tag === 'script' || el.tag === 'style'

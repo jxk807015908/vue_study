@@ -22,6 +22,7 @@ export function parseText (
   delimiters?: [string, string]
 ): TextParseResult | void {
   const tagRE = delimiters ? buildRegex(delimiters) : defaultTagRE
+  // TODO 这里没有看懂为什么没匹配到类似 {{name}}这种文本时直接返回
   if (!tagRE.test(text)) {
     return
   }

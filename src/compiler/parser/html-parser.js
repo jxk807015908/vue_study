@@ -68,7 +68,7 @@ export function parseHTML (html, options) {
   const isUnaryTag = options.isUnaryTag || no
   const canBeLeftOpenTag = options.canBeLeftOpenTag || no
   let index = 0
-  let last, lastTag
+  let last, lastTag // lastTag：上一个标签的标签名
   while (html) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
@@ -174,6 +174,7 @@ export function parseHTML (html, options) {
       const rest = html.replace(reStackedTag, function (all, text, endTag) {
         // text是文本内容，endTag是闭合标签的字符串
         endTagLength = endTag.length
+        // 如果不是script,style,textarea,noscript
         if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
           // todo 不知道这个在处理什么
           text = text
@@ -185,6 +186,7 @@ export function parseHTML (html, options) {
           text = text.slice(1)
         }
         if (options.chars) {
+          // 加入文本节点
           options.chars(text)
         }
         return ''

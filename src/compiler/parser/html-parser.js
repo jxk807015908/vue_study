@@ -193,9 +193,11 @@ export function parseHTML (html, options) {
       })
       index += html.length - rest.length
       html = rest
+      // 结束上一个标签
       parseEndTag(stackedTag, index - endTagLength, index)
     }
 
+    // 如果经过上面的处理html和last一致说明，已经没有特殊内容了，后面的都是文本
     if (html === last) {
       options.chars && options.chars(html)
       if (process.env.NODE_ENV !== 'production' && !stack.length && options.warn) {
@@ -205,6 +207,7 @@ export function parseHTML (html, options) {
     }
   }
 
+  // 将残留的节点全部闭合
   // Clean up any remaining tags
   parseEndTag()
 

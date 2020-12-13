@@ -7,7 +7,7 @@ import { parseFilters } from './filter-parser'
 import { genAssignmentCode } from '../directives/model'
 import { extend, cached, no, camelize, hyphenate } from 'shared/util'
 import { isIE, isEdge, isServerRendering } from 'core/util/env'
-
+console.log(he.decode(`let a = 'a';let obj = {a}`));
 import {
   addProp,
   addAttr,
@@ -384,6 +384,7 @@ export function parse (
         }
         let res
         let child: ?ASTNode
+        // 不在v-pre影响区域内并且文本内有动态内容时进入
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
           child = {
             type: 2,
@@ -391,6 +392,7 @@ export function parse (
             tokens: res.tokens,
             text
           }
+          // 如果当前需要插入的内容是空字符串并且当前父级没有内容时会直接跳过，避免父节点的首个节点是一个空白文本节点
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
           child = {
             type: 3,
@@ -473,7 +475,7 @@ export function processElement (
   )
   // 处理ref属性
   processRef(element)
-  // 处理节点上的slot和slot-scope属性
+  // 处理节点上的scope和slot-scope属性
   processSlotContent(element)
   // 处理标签名为slot的节点
   processSlotOutlet(element)
@@ -643,7 +645,7 @@ function processOnce (el) {
 
 // handle content being passed to a component as slot,
 // e.g. <template slot="xxx">, <div slot-scope="xxx">
-// 处理节点上的slot和slot-scope属性
+// 处理节点上的scope和slot-scope属性
 function processSlotContent (el) {
   let slotScope
   // 取出slotScope

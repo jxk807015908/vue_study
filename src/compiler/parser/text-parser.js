@@ -17,6 +17,7 @@ type TextParseResult = {
   tokens: Array<string | { '@binding': string }>
 }
 
+// 处理文本内容， 例如输入'aaa{{bb}}cc'输出 {expression:`"aaa"+_s({{bb}})+"cc"`, tokens: ['aaa', { '@binding': '{{bb}}'}, 'cc']}
 export function parseText (
   text: string,
   delimiters?: [string, string]
@@ -34,10 +35,13 @@ export function parseText (
     index = match.index
     // push text token
     if (index > lastIndex) {
+      // 将非{{sss}}这种格式的文本直接存入rawTokens数组中，例如 'aaa{{b}}', rawTokens会存入'aaa'
       rawTokens.push(tokenValue = text.slice(lastIndex, index))
+      // tokens中存的比rawTokens的多两个引号如 '"aaa"'
       tokens.push(JSON.stringify(tokenValue))
     }
     // tag token
+    // 将{{aaa}}这种类型的转化为表达式形式
     const exp = parseFilters(match[1].trim())
     tokens.push(`_s(${exp})`)
     rawTokens.push({ '@binding': exp })

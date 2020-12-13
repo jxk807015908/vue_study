@@ -2,6 +2,7 @@
 
 const validDivisionCharRE = /[\w).+\-_$\]]/
 
+// todo 这个转化表达式的方法究竟在转些什么
 export function parseFilters (exp: string): string {
   let inSingle = false
   let inDouble = false

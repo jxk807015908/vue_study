@@ -825,14 +825,15 @@ function processAttrs (el) {
       modifiers = parseModifiers(name.replace(dirRE, ''))
       // support .foo shorthand syntax for the .prop modifier
       if (process.env.VBIND_PROP_SHORTHAND && propBindRE.test(name)) {
+        // 标志该属性用于绑定Dom属性
         (modifiers || (modifiers = {})).prop = true
         // 删除修饰符等其他内容，获得纯净的属性名称
         name = `.` + name.slice(1).replace(modifierRE, '')
       } else if (modifiers) {
-        // 删除修饰符等其他内容，获得纯净的属性名称
+        // 删除属性名中修饰符内容
         name = name.replace(modifierRE, '')
       }
-      //判断属性是否以: v-bind开头
+      //判断属性是否以: v-bind、.、:开头
       if (bindRE.test(name)) { // v-bind
         name = name.replace(bindRE, '')
         // 转化为值得表达式

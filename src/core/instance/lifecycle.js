@@ -35,6 +35,7 @@ export function initLifecycle (vm: Component) {
   // locate first non-abstract parent
   let parent = options.parent
   if (parent && !options.abstract) {
+    // 向上去找最近的非抽象组件作为父级
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }

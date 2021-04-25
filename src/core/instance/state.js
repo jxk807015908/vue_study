@@ -45,27 +45,36 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+// 梳理props、methods、data、computed、watch
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 初始化props
   if (opts.props) initProps(vm, opts.props)
+  // 初始化methods
   if (opts.methods) initMethods(vm, opts.methods)
   if (opts.data) {
+    // 初始化data
     initData(vm)
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
+  // 处理computed
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
+    // 处理watch
     initWatch(vm, opts.watch)
   }
 }
 
+// 处理props属性
 function initProps (vm: Component, propsOptions: Object) {
+  // propsData是父级传给组件的props数据
   const propsData = vm.$options.propsData || {}
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array
   // instead of dynamic object key enumeration.
+  // _propKeys存放props的所有key
   const keys = vm.$options._propKeys = []
   const isRoot = !vm.$parent
   // root instance props should be converted
@@ -97,20 +106,24 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
+      // 给_props设置属性，并设置响应式
       defineReactive(props, key, value)
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
     if (!(key in vm)) {
+      // 将_props上的属性代理到vm下
       proxy(vm, `_props`, key)
     }
   }
   toggleObserving(true)
 }
 
+// 处理data
 function initData (vm: Component) {
   let data = vm.$options.data
+  // 如果data是function就调用方法获得值
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
@@ -144,10 +157,12 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      // 将_data上的属性使用defineProperty代理到实例上
       proxy(vm, `_data`, key)
     }
   }
   // observe data
+  // 设置data的响应式
   observe(data, true /* asRootData */)
 }
 
@@ -166,6 +181,7 @@ export function getData (data: Function, vm: Component): any {
 
 const computedWatcherOptions = { lazy: true }
 
+// 处理computed
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
   const watchers = vm._computedWatchers = Object.create(null)
@@ -196,6 +212,7 @@ function initComputed (vm: Component, computed: Object) {
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
     if (!(key in vm)) {
+      // 使用defineProperty将计算属性定义到实例上，具体是将watcher上的value定义到了实例上，在定义过程中也会将watcher添加到依赖实例上
       defineComputed(vm, key, userDef)
     } else if (process.env.NODE_ENV !== 'production') {
       if (key in vm.$data) {
@@ -207,6 +224,7 @@ function initComputed (vm: Component, computed: Object) {
   }
 }
 
+// 使用defineProperty将计算属性加入到实例上
 export function defineComputed (
   target: any,
   key: string,
@@ -259,6 +277,7 @@ function createGetterInvoker(fn) {
   }
 }
 
+// 处理methods,设置method上每个方法内部的上下文，并直接在实例上设置对应的属性
 function initMethods (vm: Component, methods: Object) {
   const props = vm.$options.props
   for (const key in methods) {
@@ -287,6 +306,7 @@ function initMethods (vm: Component, methods: Object) {
   }
 }
 
+// 处理watch实际上就是直接调用的$watch方法
 function initWatch (vm: Component, watch: Object) {
   for (const key in watch) {
     const handler = watch[key]
@@ -342,6 +362,7 @@ export function stateMixin (Vue: Class<Component>) {
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
 
+  // 设置属性监听，并返回一个解除监听的方法
   Vue.prototype.$watch = function (
     expOrFn: string | Function,
     cb: any,

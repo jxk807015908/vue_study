@@ -46,6 +46,7 @@ if (process.env.NODE_ENV !== 'production') {
 /**
  * Helper that recursively merges two data objects together.
  */
+// 深合并，但from的属性只作为补充，to存在该属性时，该属性的值以to对应属性的值为准
 function mergeData (to: Object, from: ?Object): Object {
   if (!from) return to
   let key, toVal, fromVal
@@ -118,6 +119,8 @@ export function mergeDataOrFn (
   }
 }
 
+// data属性的合并策略，深合并,两个的对象的key均存在时，以parent的为准，即使他的值为undefined
+// key覆盖顺序： options => mixins后 => mixins前 => extends
 strats.data = function (
   parentVal: any,
   childVal: any,
@@ -159,6 +162,7 @@ function mergeHook (
     : res
 }
 
+// 数组去重
 function dedupeHooks (hooks) {
   const res = []
   for (let i = 0; i < hooks.length; i++) {
@@ -170,6 +174,10 @@ function dedupeHooks (hooks) {
 }
 
 LIFECYCLE_HOOKS.forEach(hook => {
+  // 生命周期合并策略，两个参数会合成一个数组
+  // undefined + function() {alert(1)}  =>  [function() {alert(1)}]
+  // function() {alert(1)} + function() {alert(2)}  =>  [function() {alert(1)}, function() {alert(2)}]
+  // 执行顺序： extends => mixins前 => mixins后 => options
   strats[hook] = mergeHook
 })
 
@@ -196,6 +204,8 @@ function mergeAssets (
 }
 
 ASSET_TYPES.forEach(function (type) {
+  // components,directives,filter的合并策略
+  // 会生成一个原型链，原型链从外到里顺序： options => mixins后 => mixins前 => extends
   strats[type + 's'] = mergeAssets
 })
 
@@ -205,6 +215,8 @@ ASSET_TYPES.forEach(function (type) {
  * Watchers hashes should not overwrite one
  * another, so we merge them as arrays.
  */
+// watch的合并策略，两个参数会合成一个对象，对象值为一个数组
+// watch: {a() {return 1}}   {a() {return 2}, b() {return 2}} =>   {a: [function() {return 1}, function() {return 2}], b() {return 2}}
 strats.watch = function (
   parentVal: ?Object,
   childVal: ?Object,
@@ -238,6 +250,8 @@ strats.watch = function (
 /**
  * Other object hashes.
  */
+// props,methods,inject,computed的合并策略，浅合并，后面的会直接覆盖前面的
+// 覆盖顺序 options => mixins后 => mixins前 => extends
 strats.props =
 strats.methods =
 strats.inject =
@@ -296,6 +310,7 @@ export function validateComponentName (name: string) {
  * Object-based format.
  */
 function normalizeProps (options: Object, vm: ?Component) {
+  // key值驼峰化命名
   const props = options.props
   if (!props) return
   const res = {}
@@ -397,9 +412,18 @@ export function mergeOptions (
   if (typeof child === 'function') {
     child = child.options
   }
-
+  // 统一child.props下的结构,全部转为Object格式，方便后面统一处理
+  // key值驼峰化+值转为对象     props: {'is-show': Boolean} => {'isShow': { type: Boolean }}     {'is-show': {default: null}} => {'isShow': {default: null}}
+  // key值驼峰化+Array转Object  props: ['is-show']          => {'isShow': { type: null }}
   normalizeProps(child, vm)
+  // 统一child.inject下的结构,全部转为Object格式，方便后面统一处理
+  // 值转为对象     inject: {'is-show': true} => {'is-show': { from: 'is-show' }}     {'is-show': {from: 'aaa'}} => {'is-show': {from: 'aaa'}}   {'is-show': {default: 'value'}} => {'is-show': {from: 'aaa',default: 'value'}}
+  // Array转Object  inject: ['is-show']       => {'is-show': { from: 'is-show' }}
   normalizeInject(child, vm)
+  // 统一child.directives下的结构,将值为function的统一为Object，方便后面统一处理
+  // directives: {'scroll': function(){alert(1)}} => {'scroll': { bind: function(){alert(1)}, update: function(){alert(1)} }}
+  // directives: {'scroll': {}} => {'scroll': {}}  // 不变
+  // directives: {'scroll': {bind: () => {}}} => {'scroll': {bind: () => {}}} // 不变
   normalizeDirectives(child)
 
   // Apply extends and mixins on the child options,
@@ -407,9 +431,11 @@ export function mergeOptions (
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
   if (!child._base) {
+    // 递归的将extends上的内容合并过来
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }
+    // 递归的将mixins上的内容合并过来
     if (child.mixins) {
       for (let i = 0, l = child.mixins.length; i < l; i++) {
         parent = mergeOptions(parent, child.mixins[i], vm)
@@ -428,6 +454,7 @@ export function mergeOptions (
     }
   }
   function mergeField (key) {
+    // 策略模式，不同属性（data、watch、methods等）使用不同的合并策略，默认的合并策略是后面的覆盖前面的
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
   }

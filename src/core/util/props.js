@@ -33,6 +33,7 @@ export function validateProp (
     if (absent && !hasOwn(prop, 'default')) {
       value = false
     } else if (value === '' || value === hyphenate(key)) {
+      // 当props的属性接受Boolean类型,value等于''或者属性名与绑定的字符串名称相同时，会将值转为true
       // only cast empty string / same name to boolean if
       // boolean has higher priority
       const stringIndex = getTypeIndex(String, prop.type)
@@ -42,6 +43,7 @@ export function validateProp (
     }
   }
   // check default value
+  // 当前prop的没有传入值时，使用默认值，并设置响应式
   if (value === undefined) {
     value = getPropDefaultValue(vm, prop, key)
     // since the default value is a fresh copy,

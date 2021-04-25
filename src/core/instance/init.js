@@ -14,15 +14,19 @@ let uid = 0
 
 export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
+    // vue实例
     const vm: Component = this
     // a uid
+    // vue实例的id,从0开始累加
     vm._uid = uid++
 
     let startTag, endTag
     /* istanbul ignore if */
+    // 此处使用了浏览器的performance来测量性能
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       startTag = `vue-perf-start:${vm._uid}`
       endTag = `vue-perf-end:${vm._uid}`
+      // 为此时标记一个标签，后面还会添加标签，通过使用measure方法获得两个标签间所用的时间
       mark(startTag)
     }
 
@@ -35,6 +39,8 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
+      // 将vue全局配置与当前组件配置项进行合并，并保存到$options属性中
+      // 包括对props、inject、directives的格式统一，并针对不同的属性使用不同的合并策略进行合并，对extends、mixins中内容的合并处理也在其中
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -49,6 +55,7 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+    // 初始化部分属性并赋上默认值，其中$parent、$root也是在这里被赋值的
     initLifecycle(vm)
     initEvents(vm)
     initRender(vm)

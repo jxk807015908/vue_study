@@ -4,6 +4,7 @@ import { hasOwn } from 'shared/util'
 import { warn, hasSymbol } from '../util/index'
 import { defineReactive, toggleObserving } from '../observer/index'
 
+// 初始化provide,新增_provided属性用于保存结果
 export function initProvide (vm: Component) {
   const provide = vm.$options.provide
   if (provide) {
@@ -13,7 +14,9 @@ export function initProvide (vm: Component) {
   }
 }
 
+// 初始化inject配置
 export function initInjections (vm: Component) {
+  // 获取每个inject属性对应的上层provide，具体是通过$parent一直往父级上找，直到找到提供对应属性的provide
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
     toggleObserving(false)
@@ -29,6 +32,7 @@ export function initInjections (vm: Component) {
           )
         })
       } else {
+        // 在实例上设置具有依赖收集和触发功能的属性，但这个属性其实不是响应式的，即父级的provide的值发生变化时，inject的值不会跟着变化
         defineReactive(vm, key, result[key])
       }
     })

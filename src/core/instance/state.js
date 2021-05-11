@@ -256,6 +256,7 @@ export function defineComputed (
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+// 如果另一个计算属性有用到这个计算属性，当前计算属性的依赖会全部添加到那个计算属性上
 function createComputedGetter (key) {
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
